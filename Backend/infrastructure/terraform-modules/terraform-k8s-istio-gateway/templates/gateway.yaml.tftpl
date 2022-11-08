@@ -1,0 +1,31 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway 
+metadata:
+    name: ${gw.name}
+    namespace: ${gw.namespace} 
+spec:
+    selector:
+       istio: ${gw.selector} 
+    %{~ if 0 < length(gw.servers) ~}
+    servers:
+    %{~ for server in gw.servers ~}
+    - port:
+        number: ${server.number}
+        name: ${server.name}
+        protocol: ${server.protocol}
+        %{~ if server.tls_enabled ~}	
+      tls:
+        mode: SIMPLE
+        credentialName: ${server.tls_credential_name}
+        %{~ endif ~}
+        %{~ if 0 < length(server.hosts) ~}
+      hosts:
+      %{~ for host in server.hosts ~}
+      - ${host}
+      %{~ endfor ~}
+      %{~ else ~}
+      hosts:
+      - "*"
+      %{~endif ~}
+    %{~ endfor ~}
+    %{~ endif ~}

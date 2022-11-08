@@ -1,0 +1,37 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: ${vs.name}
+  namespace: ${vs.namespace}
+spec:
+  %{~ if 0 < length(vs.hosts) ~}
+  hosts:
+  %{~ for host in vs.hosts ~}
+    - ${host}
+  %{~ endfor ~}
+  %{~ else ~}
+  hosts:
+    - "*"
+  %{~ endif ~}
+  %{~ if 0 < length(vs.gateways) ~}
+  gateways:
+  %{~ for gateway in vs.gateways ~}
+    - ${gateway}
+  %{~ endfor ~}
+  %{~ endif ~}
+  %{~ if 0 < length(vs.routes) ~}
+  %{~ for route in vs.routes ~}
+  %{~ if null != route.tcp ~}
+  tcp:
+    - route:
+      - destination:
+          port:
+            number: ${route.dest_port}
+          host: ${route.dest_host}
+      %{~ if true == route.match ~}    
+      match:
+      - port: ${route.match_port}
+      %{~ endif ~}    
+  %{~ endif ~}
+  %{~ endfor ~}
+  %{~ endif ~}
