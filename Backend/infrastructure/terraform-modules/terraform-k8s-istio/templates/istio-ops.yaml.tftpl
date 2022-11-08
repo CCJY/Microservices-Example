@@ -1,0 +1,61 @@
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  namespace: ${istioNamespace}
+  name: ${profile}-istiocontrolplane
+spec:
+  profile: ${profile}
+  values:
+    global:
+      proxy:
+        autoInject: ${autoInject}
+  addonComponents:
+    prometheus:
+      enabled: true
+  components:
+    pilot:
+      k8s:
+        resources:
+          requests:
+            memory: ${pilotRequestsMemory} 
+    %{~ if 0 < length(ingressGateways) ~}
+    ingressGateways: 
+      %{~ for ingress_gateway in ingressGateways ~}
+      - name: ${ingress_gateway.name}
+        enabled: ${ingress_gateway.enabled}
+        %{~ if 0 < length(ingress_gateway.labels) ~}
+        label:
+          %{~ for label in ingress_gateway.labels ~}
+          ${label.label_key}: "${label.label_value}"
+          %{~ endfor ~}
+        %{~ endif ~}
+        k8s: 
+        %{~ if 0 < length(ingress_gateway.nodeSelectors) ~}
+          nodeSelector:
+            %{~ for nodeSelector in ingress_gateway.nodeSelectors ~}
+            ${nodeSelector.node_key}: ${nodeSelector.node_value}
+            %{~ endfor ~}
+        %{~ endif ~}
+        %{~ if null != ingress_gateway.requests_cpu && null != ingress_gateway.requests_memory ~}
+          resources:
+            requests:
+               cpu: ${ingress_gateway.requests_cpu}
+               memory: ${ingress_gateway.requests_memory}
+        %{~ endif ~}
+          service:
+            type: ${ingress_gateway.service_type}
+            %{~ if 0 < length(ingress_gateway.ports) ~}
+            ports:
+            %{~ for port in ingress_gateway.ports ~}
+              - port: ${port.port}
+                name: ${port.name}
+                %{~ if null != port.protocol ~}
+                protocol: ${port.protocol}
+                %{~ endif ~}
+                %{~ if null != port.targetPort ~}
+                targetPort: ${port.targetPort}
+                %{~ endif ~}
+            %{~ endfor ~}
+            %{~ endif ~}
+      %{~ endfor ~}
+    %{~ endif ~}
