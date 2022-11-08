@@ -1,0 +1,12 @@
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: ${config.name}
+  namespace: ${namespace}
+spec:
+  %{~ if 0 < length(config.addresses) ~}
+  addresses:
+    %{ for address in config.addresses ~}
+    - ${ address }
+    %{ endfor ~}
+  %{~ endif ~}
